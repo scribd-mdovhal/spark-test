@@ -62,7 +62,7 @@ object TestApp extends {
                      :- *(1) Project [document_type#19, created_at#17]
                      :  +- *(1) Filter (isnotnull(created_at#17) && (substring(created_at#17, 1, 4) = 2017))
                      :     +- *(1) FileScan parquet default.documents[created_at#17,document_type#19] 
-                     PartitionFilters: [isnotnull(document_type#19)], PushedFilters: [IsNotNull(created_at)]
+                                   PartitionFilters: [isnotnull(document_type#19)], PushedFilters: [IsNotNull(created_at)]
                      +- BroadcastExchange HashedRelationBroadcastMode(List(cast(input[0, int, false] as bigint)))
                         +- LocalTableScan [doc_type#37]
   */
