@@ -27,19 +27,19 @@ object TestApp extends {
     //documents.count() = 100000000
     val types: DataFrame = Seq(1, 2, 3).toDF("doc_type")
 
-    val documentsCreatedBetweenJanAndNov2017: DataFrame = documents
+    val docTypesCreatedBetweenJanAndNov2017: DataFrame = documents
       .join(types, 'document_type === 'doc_type)
       .where(substring('created_at, 1, 4) === 2017)
-      .groupBy('document_type).agg(max('created_at) as "max_created")
-      .where('max_created < "2017-12-01 00:00:00.000")
+      .groupBy('document_type).agg(min('created_at) as "min_created")
+      .where('min_created < "2017-12-01 00:00:00.000")
     /*
     documentsCreatedBetweenJanAndNov2017.explain
     == Physical Plan ==
       *(3) Filter (isnotnull(max_created#111) && (max_created#111 < 2017-12-01 00:00:00.000))
-    +- SortAggregate(key=[document_type#18], functions=[max(created_at#3)], output=[document_type#18, max_created#111])
+    +- SortAggregate(key=[document_type#18], functions=[min(created_at#3)], output=[document_type#18, min_created#111])
     +- *(2) Sort [document_type#18 ASC NULLS FIRST], false, 0
     +- Exchange hashpartitioning(document_type#18, 200)
-    +- SortAggregate(key=[document_type#18], functions=[partial_max(created_at#3)], output=[document_type#18, max#120])
+    +- SortAggregate(key=[document_type#18], functions=[partial_min(created_at#3)], output=[document_type#18, min#120])
     +- *(1) Sort [document_type#18 ASC NULLS FIRST], false, 0
     +- *(1) Project [document_type#18, created_at#3]
     +- *(1) BroadcastHashJoin [cast(document_type#18 as int)], [doc_type#92], Inner, BuildRight
@@ -51,10 +51,10 @@ object TestApp extends {
     +- LocalTableScan [doc_type#92]
   */
        
-    val distinctTypeBetweenNovAndDec2017 = documentsCreatedBetweenJanAndNov2017.select('document_type).distinct.collect.length
+    val distinctTypeBetweenJanAndNov2017 = docTypesCreatedBetweenJanAndNov2017.select('document_type).distinct.collect.length
     println(s"Storing $distinctTypeBetweenNovAndDec2017 documents type")
 
-    documentsCreatedBetweenJanAndNov2017.write.parquet("some parquet path")
+    docTypesCreatedBetweenJanAndNov2017.write.parquet("some parquet path")
     
   }
 }
