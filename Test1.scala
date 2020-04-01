@@ -45,7 +45,7 @@ object TestApp extends {
     +- *(1) BroadcastHashJoin [cast(document_type#18 as int)], [doc_type#92], Inner, BuildRight
     :- *(1) Project [document_type#18, created_at#3]
     :  +- *(1) Filter ((isnotnull(created_at#3) && (cast(substring(created_at#3, 1, 4) as int) = 2017)) && isnotnull(document_type#18))
-    :     +- *(1) FileScan parquet test.documents[created_at#3,document_type#18] Batched: trueб Format: Parquet,
+    :     +- *(1) FileScan parquet test.documents[created_at#3,document_type#18] Batched: true Format: Parquet,
     PushedFilters: [IsNotNull(created_at), IsNotNull(document_type)]
       +- BroadcastExchange HashedRelationBroadcastMode(List(cast(input[0, int, false] as bigint)))
     +- LocalTableScan [doc_type#92]
