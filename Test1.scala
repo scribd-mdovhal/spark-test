@@ -29,6 +29,7 @@ object TestApp extends {
       .where(substring('created_at, 1, 4) === 2017)
       .groupBy('document_type).agg(max('created_at) as "max_created")
       .where('max_created < "2017-12-01 00:00:00.000")
+    
     val distinctTypeBetweenNovAndDec2017 = documentsCreatedBetweenJanAndNov2017.select('document_type).distinct.collect.length
     println(s"Storing $distinctTypeBetweenNovAndDec2017 documents type")
 
