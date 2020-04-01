@@ -11,51 +11,60 @@ object TestApp extends {
       .getOrCreate()
 
     import spark.implicits._
-
-    val documents: DataFrame = spark.table("test.documents").select("document_type", "created_at", "id")
-    //|-- document_type: byte (nullable = true)
-    //|-- created_at: string (nullable = true)
-    //|-- id: integer (nullable = true)
-    //+-------------+---------------------+---+
-    //|document_type|created_at           |id |
-    //+-------------+---------------------+---+
-    //|1            |2006-10-24 03:00:38.0|95 |
-    //|.............|.....................|...|
-    //|.............|.....................|...|
-    //|2            |2006-11-06 10:28:41.0|150|
-    //+-------------+---------------------+---+
-    //documents.count() = 100000000
-    val types: DataFrame = Seq(1, 2, 3).toDF("doc_type")
-
-    val docTypesCreatedBetweenJanAndNov2017: DataFrame = documents
-      .join(types, 'document_type === 'doc_type)
-      .where(substring('created_at, 1, 4) === 2017)
-      .groupBy('document_type).agg(min('created_at) as "min_created")
-      .where('min_created < "2017-12-01 00:00:00.000")
-    /*
-    documentsCreatedBetweenJanAndNov2017.explain
-    == Physical Plan ==
-      *(3) Filter (isnotnull(max_created#111) && (max_created#111 < 2017-12-01 00:00:00.000))
-    +- SortAggregate(key=[document_type#18], functions=[min(created_at#3)], output=[document_type#18, min_created#111])
-    +- *(2) Sort [document_type#18 ASC NULLS FIRST], false, 0
-    +- Exchange hashpartitioning(document_type#18, 200)
-    +- SortAggregate(key=[document_type#18], functions=[partial_min(created_at#3)], output=[document_type#18, min#120])
-    +- *(1) Sort [document_type#18 ASC NULLS FIRST], false, 0
-    +- *(1) Project [document_type#18, created_at#3]
-    +- *(1) BroadcastHashJoin [cast(document_type#18 as int)], [doc_type#92], Inner, BuildRight
-    :- *(1) Project [document_type#18, created_at#3]
-    :  +- *(1) Filter ((isnotnull(created_at#3) && (cast(substring(created_at#3, 1, 4) as int) = 2017)) && isnotnull(document_type#18))
-    :     +- *(1) FileScan parquet test.documents[created_at#3,document_type#18] Batched: true Format: Parquet,
-    PushedFilters: [IsNotNull(created_at), IsNotNull(document_type)]
-      +- BroadcastExchange HashedRelationBroadcastMode(List(cast(input[0, int, false] as bigint)))
-    +- LocalTableScan [doc_type#92]
-  */
-       
-    val distinctTypeBetweenJanAndNov2017 = docTypesCreatedBetweenJanAndNov2017.select('document_type).distinct.collect.length
-    println(s"Storing $distinctTypeBetweenNovAndDec2017 documents type")
-
-    docTypesCreatedBetweenJanAndNov2017.write.parquet("some parquet path")
     
+    /*
+      create table documents(
+        created_at string,
+        id long,
+        document_type int
+      ) using parquet partitioned by (document_type)
+      Data sample (documents.show):
+      +-------------------+---+-------------+
+      |         created_at| id|document_type|
+      +-------------------+---+-------------+
+      |2016-01-01 00:00:00|  8|            1|
+      |...................|...|.............|
+      |2020-01-01 00:00:00|  9|            2|
+    
+    documents.count() = 100000000
+    */
+    val documents: DataFrame = spark.table("documents").select("document_type", "created_at", "id")
+    val types: DataFrame = Seq(1, 2, 3, 4, 5).toDF("doc_type")
+
+    val docTypesCreatedBetweenJanAndApr2017: DataFrame = documents
+      .join(types, 'document_type === 'doc_type)
+      .where(substring('created_at, 1, 4) === "2017")
+      .groupBy('document_type)
+      .agg(min('created_at) as "min_created")
+      .where('min_created < "2017-05-01 00:00:00")
+    
+    val uniqueDocTypes = docTypesCreatedBetweenJanAndApr2017
+      .select('document_type)
+      .collect
+      .distinct
+      .length
+    
+    println(s"Unique document types: $uniqueDocTypes")
+
+    docTypesCreatedBetweenJanAndApr2017.write.parquet("some parquet path")
+    
+    /*  docTypesCreatedBetweenJanAndApr2017.explain
+   
+    == Physical Plan ==
+*(3) Filter (isnotnull(min_created#63) && (min_created#63 < 2017-12-01 00:00:00))
++- SortAggregate(key=[document_type#19], functions=[min(created_at#17)])
+   +- *(2) Sort [document_type#19 ASC NULLS FIRST], false, 0
+      +- Exchange hashpartitioning(document_type#19, 200)
+         +- SortAggregate(key=[document_type#19], functions=[partial_min(created_at#17)])
+            +- *(1) Sort [document_type#19 ASC NULLS FIRST], false, 0
+               +- *(1) Project [document_type#19, created_at#17]
+                  +- *(1) BroadcastHashJoin [document_type#19], [doc_type#37], Inner, BuildRight
+                     :- *(1) Project [document_type#19, created_at#17]
+                     :  +- *(1) Filter (isnotnull(created_at#17) && (substring(created_at#17, 1, 4) = 2017))
+                     :     +- *(1) FileScan parquet default.documents[created_at#17,document_type#19] 
+                     PartitionFilters: [isnotnull(document_type#19)], PushedFilters: [IsNotNull(created_at)]
+                     +- BroadcastExchange HashedRelationBroadcastMode(List(cast(input[0, int, false] as bigint)))
+                        +- LocalTableScan [doc_type#37]
+  */
   }
 }
-
