@@ -29,12 +29,8 @@ object TestApp extends {
       .where(substring('created_at, 1, 4) === 2017)
       .groupBy('document_type).agg(max('created_at) as "max_created")
       .where('max_created < "2017-12-01 00:00:00.000")
-    
-    val distinctTypeBetweenNovAndDec2017 = documentsCreatedBetweenJanAndNov2017.select('document_type).distinct.collect.length
-    println(s"Storing $distinctTypeBetweenNovAndDec2017 documents type")
-
-    documentsCreatedBetweenJanAndNov2017.write.parquet("some parquet path")
     /*
+    documentsCreatedBetweenJanAndNov2017.explain
     == Physical Plan ==
       *(3) Filter (isnotnull(max_created#111) && (max_created#111 < 2017-12-01 00:00:00.000))
     +- SortAggregate(key=[document_type#18], functions=[max(created_at#3)], output=[document_type#18, max_created#111])
@@ -50,6 +46,12 @@ object TestApp extends {
       +- BroadcastExchange HashedRelationBroadcastMode(List(cast(input[0, int, false] as bigint)))
     +- LocalTableScan [doc_type#92]
   */
+       
+    val distinctTypeBetweenNovAndDec2017 = documentsCreatedBetweenJanAndNov2017.select('document_type).distinct.collect.length
+    println(s"Storing $distinctTypeBetweenNovAndDec2017 documents type")
+
+    documentsCreatedBetweenJanAndNov2017.write.parquet("some parquet path")
+    
   }
 }
 
