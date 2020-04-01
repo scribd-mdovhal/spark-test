@@ -24,6 +24,7 @@ object TestApp extends {
     //|.............|.....................|...|
     //|2            |2006-11-06 10:28:41.0|150|
     //+-------------+---------------------+---+
+    //documents.count() = 100000000
     val types: DataFrame = Seq(1, 2, 3).toDF("doc_type")
 
     val documentsCreatedBetweenJanAndNov2017: DataFrame = documents
