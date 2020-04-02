@@ -51,7 +51,7 @@ object TestApp extends {
     /*  docTypesCreatedBetweenJanAndApr2017.explain
    
     == Physical Plan ==
-*(3) Filter (isnotnull(min_created#63) && (min_created#63 < 2017-12-01 00:00:00))
+*(3) Filter (isnotnull(min_created#63) && (min_created#63 < 2017-05-01 00:00:00))
 +- SortAggregate(key=[document_type#19], functions=[min(created_at#17)])
    +- *(2) Sort [document_type#19 ASC NULLS FIRST], false, 0
       +- Exchange hashpartitioning(document_type#19, 200)
